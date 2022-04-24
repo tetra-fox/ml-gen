@@ -26,7 +26,10 @@ async function run(): Promise<void> {
     // #region Setup MelonLoader
     core.startGroup("Setup MelonLoader");
     const mlAssetName = "MelonLoader.x64.zip";
-    const mlRelease = await GitHub.getRelease("LavaGang/MelonLoader");
+    const mlRelease = await GitHub.getRelease(
+      "LavaGang/MelonLoader",
+      Inputs.mlVersion.value
+    );
     await GitHub.downloadReleaseAsset(mlRelease!, mlAssetName);
     await Tools.extract(
       path.join(Inputs.tmpPath.value, mlAssetName),
@@ -189,7 +192,7 @@ async function run(): Promise<void> {
       unhollowerArgs.push(`--obf-regex ${gameInfo!.obfuscationRegex}`);
 
     // Tell .NET what runtime to use so we can use this tool on non-Windows runners as well
-    fs.writeFileSync(
+    await fs.promises.writeFile(
       path.join(unhollowerPath, "AssemblyUnhollower.runtimeconfig.json"),
       JSON.stringify({
         runtimeOptions: {
