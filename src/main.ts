@@ -1,23 +1,24 @@
-import * as core from "@actions/core";
-import * as exec from "@actions/exec";
-import * as io from "@actions/io";
-import semverLte from "semver/functions/lte";
-
 import fs from "fs";
 import os from "os";
 import path from "path";
 
-import Inputs from "./inputs";
-import Tools from "./tools";
+import semverLte from "semver/functions/lte";
+import * as core from "@actions/core";
+import * as exec from "@actions/exec";
+import * as io from "@actions/io";
+
+import inputs from "./inputs";
+import cmd from "./tools/cmds";
+import {getUnityVersion} from "./tools/unitytools";
 import GitHub from "./apis/github";
 import MelonLoader from "./apis/melonloader";
 
 async function run(): Promise<void> {
   try {
-    Inputs.validate();
-    const gameInfo = await MelonLoader.fetchGameJson(Inputs.game.value);
+    inputs.validate();
+    const gameInfo = await MelonLoader.fetchGameJson(inputs.game.value);
     const asmGenRoot = path.join(
-      Inputs.gamePath.value,
+      inputs.gamePath.value,
       "MelonLoader",
       "Dependencies",
       "Il2CppAssemblyGenerator"
@@ -28,12 +29,12 @@ async function run(): Promise<void> {
     const mlAssetName = "MelonLoader.x64.zip";
     const mlRelease = await GitHub.getRelease(
       "LavaGang/MelonLoader",
-      Inputs.mlVersion.value
+      inputs.mlVersion.value
     );
     await GitHub.downloadReleaseAsset(mlRelease!, mlAssetName);
-    await Tools.extract(
-      path.join(Inputs.tmpPath.value, mlAssetName),
-      Inputs.gamePath.value
+    await cmd.extract(
+      path.join(inputs.tmpPath.value, mlAssetName),
+      inputs.gamePath.value
     );
     core.endGroup();
     // #endregion
@@ -64,14 +65,14 @@ async function run(): Promise<void> {
     await GitHub.downloadReleaseAsset(cpp2IlRelease!, cpp2IlAssetName);
 
     if (os.platform() === "win32") {
-      await Tools.extract(
-        path.join(Inputs.tmpPath.value, cpp2IlAssetName),
+      await cmd.extract(
+        path.join(inputs.tmpPath.value, cpp2IlAssetName),
         cpp2IlPath
       );
     } else {
       // Linux and MacOS use self-contained binaries, just move it
       await io.mv(
-        path.join(Inputs.tmpPath.value, cpp2IlAssetName),
+        path.join(inputs.tmpPath.value, cpp2IlAssetName),
         path.join(cpp2IlPath, cpp2IlAssetName)
       );
       await exec.exec("chmod", ["+x", path.join(cpp2IlPath, cpp2IlAssetName)]);
@@ -90,8 +91,8 @@ async function run(): Promise<void> {
       gameInfo!.forceUnhollowerVersion
     }.zip`;
     await GitHub.downloadReleaseAsset(unhollowerRelease!, unhollowerAssetName);
-    await Tools.extract(
-      path.join(Inputs.tmpPath.value, unhollowerAssetName),
+    await cmd.extract(
+      path.join(inputs.tmpPath.value, unhollowerAssetName),
       unhollowerPath
     );
     core.endGroup();
@@ -99,12 +100,13 @@ async function run(): Promise<void> {
 
     // #region Download Unity libraies
     core.startGroup("Download Unity libraries");
-    await Tools.wget(
-      `https://github.com/LavaGang/Unity-Runtime-Libraries/raw/master/${Inputs.unityVersion.value}.zip`,
-      Inputs.tmpPath.value
+    const unityVersion = inputs.unityVersion.value || (await getUnityVersion());
+    await cmd.wget(
+      `https://github.com/LavaGang/Unity-Runtime-Libraries/raw/master/${unityVersion}.zip`,
+      inputs.tmpPath.value
     );
-    await Tools.extract(
-      path.join(Inputs.tmpPath.value, `${Inputs.unityVersion.value}.zip`),
+    await cmd.extract(
+      path.join(inputs.tmpPath.value, `${unityVersion}.zip`),
       path.join(asmGenRoot, "UnityDependencies")
     );
     core.endGroup();
@@ -114,28 +116,27 @@ async function run(): Promise<void> {
     const hasMap = !!gameInfo!.mappingUrl;
     if (hasMap) {
       core.startGroup("Download deobfuscation map");
-      await Tools.wget(gameInfo!.mappingUrl!, asmGenRoot);
+      await cmd.wget(gameInfo!.mappingUrl!, asmGenRoot);
       core.endGroup();
     }
     // #endregion
 
-    io.rmRF(Inputs.tmpPath.value);
+    io.rmRF(inputs.tmpPath.value);
 
     // #region Run Cpp2IL
     core.startGroup("Run Cpp2IL");
     let cpp2IlArgs = [
-      `--game-path "${Inputs.gamePath.value}"`,
-      `--exe-name "${Inputs.gameExe.value}"`
+      `--game-path "${inputs.gamePath.value}"`,
+      `--exe-name "${inputs.gameExe.value}"`
     ];
 
     // Flags are different in the rewrite of Cpp2IL
-    // https://github.com/LavaGang/MelonLoader/blob/c8a1c8619121fe1130f949ca09eedda8951e8a42/Dependencies/Il2CppAssemblyGenerator/Packages/Cpp2IL.cs#L37-L42
+    // https://github.com/LavaGang/MelonLoader/blob/c8a1c8619121fe1130f949ca09eedda8951e8a42/Dependencies/Il2CppAssemblyGenerator/Packages/Cpp2IL.cs#L37-L84
     if (
       gameInfo!.forceCpp2IlVersion &&
       semverLte(gameInfo!.forceCpp2IlVersion, "2022.0.999")
     ) {
       // ExecuteOld
-      // https://github.com/LavaGang/MelonLoader/blob/c8a1c8619121fe1130f949ca09eedda8951e8a42/Dependencies/Il2CppAssemblyGenerator/Packages/Cpp2IL.cs#L66-L85
       cpp2IlArgs = cpp2IlArgs.concat([
         "--skip-analysis",
         "--skip-metadata-txts",
@@ -144,7 +145,6 @@ async function run(): Promise<void> {
       ]);
     } else {
       // ExecuteNew
-      // https://github.com/LavaGang/MelonLoader/blob/c8a1c8619121fe1130f949ca09eedda8951e8a42/Dependencies/Il2CppAssemblyGenerator/Packages/Cpp2IL.cs#L44-L64
       cpp2IlArgs = cpp2IlArgs.concat([
         "--use-processor attributeinjector",
         "--output-as dummydll",
@@ -165,15 +165,15 @@ async function run(): Promise<void> {
     core.startGroup("Run AssemblyUnhollower");
     const unhollowerArgs = [
       `--input=${path.join(cpp2IlPath, "cpp2il_out")}`,
-      `--output=${Inputs.outPath.value}`,
+      `--output=${inputs.outPath.value}`,
       `--mscorlib=${path.join(
-        Inputs.gamePath.value,
+        inputs.gamePath.value,
         "MelonLoader",
         "Managed",
         "mscorlib.dll"
       )}`,
       `--unity=${path.join(asmGenRoot, "UnityDependencies")}`,
-      `--gameassembly=${path.join(Inputs.gamePath.value, "GameAssembly.dll")}`,
+      `--gameassembly=${path.join(inputs.gamePath.value, "GameAssembly.dll")}`,
       "--add-prefix-to=ICSharpCode",
       "--add-prefix-to=Newtonsoft",
       "--add-prefix-to=TinyJson",

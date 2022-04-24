@@ -21,6 +21,7 @@
     "@actions/core": "^1.6.0",
     "@actions/exec": "^1.1.1",
     "@actions/io": "^1.1.2",
+    "@tybys/windows-file-version-info": "^1.0.5",
     "semver": "^7.3.7",
     "typed-rest-client": "^1.8.6"
   },

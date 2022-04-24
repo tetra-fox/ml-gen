@@ -1,8 +1,9 @@
-import * as exec from "@actions/exec";
 import os from "os";
 
+import * as exec from "@actions/exec";
+
 // Aliases for common commands
-export default class Tools {
+export default class Cmd {
   static async extract(src: string, dest: string): Promise<void> {
     await exec.exec(`unzip "${src}" -d "${dest}"`);
   }

@@ -1,7 +1,8 @@
-import * as rm from "typed-rest-client/RestClient";
 import * as core from "@actions/core";
-import Tools from "../tools";
-import Inputs from "../inputs";
+import * as rm from "typed-rest-client/RestClient";
+
+import cmd from "../tools/cmds";
+import inputs from "../inputs";
 
 // There are many more properties, but this is just what we need.
 interface Release {
@@ -33,7 +34,7 @@ export default class GitHub {
   static async downloadReleaseAsset(
     release: Release,
     assetName: string,
-    destination: string = Inputs.tmpPath.value
+    destination: string = inputs.tmpPath.value
   ): Promise<void> {
     const assetUrl = release.assets.filter(asset => asset.name === assetName)[0]
       .browser_download_url;
@@ -42,6 +43,6 @@ export default class GitHub {
       throw new Error(`Could not find asset ${assetName} in release`);
 
     core.info(`Downloading ${assetName}...`);
-    await Tools.wget(assetUrl, destination);
+    await cmd.wget(assetUrl, destination);
   }
 }

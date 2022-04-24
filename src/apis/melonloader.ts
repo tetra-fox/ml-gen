@@ -1,5 +1,5 @@
-import * as rm from "typed-rest-client/RestClient";
 import * as core from "@actions/core";
+import * as rm from "typed-rest-client/RestClient";
 
 interface GameInfo {
   gameSlug: string;

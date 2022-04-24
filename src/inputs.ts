@@ -1,6 +1,7 @@
-import * as core from "@actions/core";
 import fs from "fs";
 import path from "path";
+
+import * as core from "@actions/core";
 
 export default class Inputs {
   static readonly game = {value: core.getInput("game"), required: true};
@@ -14,7 +15,7 @@ export default class Inputs {
   };
   static readonly unityVersion = {
     value: core.getInput("unity_version"),
-    required: true
+    required: false
   };
   static readonly tmpPath = {
     value: path.normalize(core.getInput("work_path")),
@@ -43,10 +44,10 @@ export default class Inputs {
       this.mlVersion.value = `v${this.mlVersion.value}`;
 
     // Make sure we have all the required inputs
-    for (const input of Object.values(Inputs)) {
-      if (input.required && !input.value)
-        throw new Error(`Input ${input.value} is required`);
-    }
+    // for (const input of Object.values(Inputs)) {
+    //   if (input.required && !input.value)
+    //     throw new Error(`Input ${input.name} is required`);
+    // }
 
     // Make sure game_path exists
     if (!fs.existsSync(this.gamePath.value))
