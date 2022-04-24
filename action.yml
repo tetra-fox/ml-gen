@@ -1,11 +1,35 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: MelonLoader Toolchain
+description: MelonLoader's toolchain, but as a GitHub Action. Useful for CI builds of MelonLoader mods.
+author: tetra-fox
+
 inputs:
-  milliseconds: # change this
+  game:
+    description: gameSlug from MelonLoader API
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+  game_path:
+    description: Path to your Unity game
+    required: true
+  game_executable:
+    description: Your Unity game's executable name
+    required: true
+  unity_version:
+    description: Your game's Unity version
+    required: true
+  work_path:
+    description: Where tools will be downloaded
+    default: ${{ github.workspace }}/ml-gen
+    required: false
+  output_path:
+    description: Output directory for libraries
+    required: false
+  ml_version:
+    description: MelonLoader release tag name
+    required: false
+    
 runs:
-  using: 'node16'
-  main: 'dist/index.js'
+  using: "node16"
+  main: "dist/index.js"
+
+branding:
+  icon: "zap"
+  color: "purple"
