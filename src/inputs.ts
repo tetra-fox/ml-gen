@@ -9,7 +9,7 @@ export default class Inputs {
     required: true
   };
   static readonly gameExe = {
-    value: core.getInput("game_executable"),
+    value: core.getInput("game_executable").replace(/\.exe|\.app$/, ""), // Remove extension
     required: true
   };
   static readonly unityVersion = {
@@ -34,12 +34,13 @@ export default class Inputs {
   static validate(): void {
     core.info("Validating inputs...");
 
-    // Remove extension from game_executable
+    // Prepend 'v' if it's not already there
     if (
-      this.gameExe.value.endsWith(".exe") ||
-      this.gameExe.value.endsWith(".app")
+      this.mlVersion.value && // if it is set
+      this.mlVersion.value !== "latest" && // and also not "latest"
+      !this.mlVersion.value.startsWith("v") // and not already prefixed
     )
-      this.gameExe.value.split(".").slice(0, -1).join(".");
+      this.mlVersion.value = `v${this.mlVersion.value}`;
 
     // Make sure we have all the required inputs
     for (const input of Object.values(Inputs)) {

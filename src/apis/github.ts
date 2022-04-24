@@ -19,10 +19,12 @@ export default class GitHub {
     repo: string,
     tag?: string | null | undefined
   ): Promise<Release | null> {
-    core.info(`Geting release info for ${repo}...`);
+    core.info(`Geting release info for ${repo}@${tag || "latest"}...`);
     const rest: rm.RestClient = new rm.RestClient("ml-gen", this.root);
     const res: rm.IRestResponse<Release> = await rest.get<Release>(
-      `${this.root}/repos/${repo}/releases/${tag ? `tags/${tag}` : "latest"}`
+      `${this.root}/repos/${repo}/releases/${
+        tag && tag !== "latest" ? `tags/${tag}` : "latest"
+      }`
     );
     if (res.statusCode === 200 && res.result) return res.result;
     throw new Error("Failed to get release from GitHub API");
