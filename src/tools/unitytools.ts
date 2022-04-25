@@ -4,6 +4,8 @@ import path from "path";
 
 import inputs from "../inputs";
 
+export const VERSION_REGEX = /(\d{4}\.\d\.\d{2})(?:f\d)*/; // Captures "2018.3.0" from version strings like "2018.3.0f3" or "2018.3.0"
+
 // Methods for acquiring version taken from Cpp2IL
 // https://github.com/SamboyCoding/Cpp2IL/blob/12fd73ee294eba3cbaf3b2dfff1db6003a9a0bc4/Cpp2IL.Core/Cpp2IlApi.cs#L57-L154
 export async function getUnityVersion(): Promise<string> {
