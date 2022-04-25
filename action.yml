@@ -13,7 +13,7 @@ inputs:
     description: Your Unity game's executable name
     required: true
   unity_version:
-    description: Override Unity version (if this action cannot find it)
+    description: Override Unity version (If it was not automatically found)
     required: false
   work_path:
     description: Where tools will be downloaded
