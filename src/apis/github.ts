@@ -16,10 +16,7 @@ interface Asset {
 
 export default class GitHub {
   static readonly root = "https://api.github.com";
-  static async getRelease(
-    repo: string,
-    tag?: string | null | undefined
-  ): Promise<Release | null> {
+  static async getRelease(repo: string, tag?: string): Promise<Release> {
     core.info(`Geting release info for ${repo}@${tag || "latest"}...`);
     const rest: rm.RestClient = new rm.RestClient("ml-gen", this.root);
     const res: rm.IRestResponse<Release> = await rest.get<Release>(

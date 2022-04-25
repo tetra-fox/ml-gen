@@ -24,6 +24,7 @@ inputs:
     required: false
   ml_version:
     description: MelonLoader release tag name
+    default: latest
     required: false
     
 runs:
