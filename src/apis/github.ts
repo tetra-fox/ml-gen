@@ -34,7 +34,7 @@ export default class GitHub {
   static async downloadReleaseAsset(
     release: Release,
     assetName: string,
-    destination: string = inputs.tmpPath.value
+    destination: string = inputs.tmpPath
   ): Promise<void> {
     const assetUrl = release.assets.filter(asset => asset.name === assetName)[0]
       .browser_download_url;

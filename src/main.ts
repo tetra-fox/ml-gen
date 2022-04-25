@@ -16,9 +16,9 @@ import MelonLoader from "./apis/melonloader";
 async function run(): Promise<void> {
   try {
     inputs.validate();
-    const gameInfo = await MelonLoader.fetchGameJson(inputs.game.value);
+    const gameInfo = await MelonLoader.fetchGameJson(inputs.game);
     const asmGenRoot = path.join(
-      inputs.gamePath.value,
+      inputs.gamePath,
       "MelonLoader",
       "Dependencies",
       "Il2CppAssemblyGenerator"
@@ -29,12 +29,12 @@ async function run(): Promise<void> {
     const mlAssetName = "MelonLoader.x64.zip";
     const mlRelease = await GitHub.getRelease(
       "LavaGang/MelonLoader",
-      inputs.mlVersion.value
+      inputs.mlVersion
     );
     await GitHub.downloadReleaseAsset(mlRelease!, mlAssetName);
     await cmd.extract(
-      path.join(inputs.tmpPath.value, mlAssetName),
-      inputs.gamePath.value
+      path.join(inputs.tmpPath, mlAssetName),
+      inputs.gamePath
     );
     core.endGroup();
     // #endregion
@@ -66,13 +66,13 @@ async function run(): Promise<void> {
 
     if (os.platform() === "win32") {
       await cmd.extract(
-        path.join(inputs.tmpPath.value, cpp2IlAssetName),
+        path.join(inputs.tmpPath, cpp2IlAssetName),
         cpp2IlPath
       );
     } else {
       // Linux and MacOS use self-contained binaries, just move it
       await io.mv(
-        path.join(inputs.tmpPath.value, cpp2IlAssetName),
+        path.join(inputs.tmpPath, cpp2IlAssetName),
         path.join(cpp2IlPath, cpp2IlAssetName)
       );
       await exec.exec("chmod", ["+x", path.join(cpp2IlPath, cpp2IlAssetName)]);
@@ -92,7 +92,7 @@ async function run(): Promise<void> {
     }.zip`;
     await GitHub.downloadReleaseAsset(unhollowerRelease!, unhollowerAssetName);
     await cmd.extract(
-      path.join(inputs.tmpPath.value, unhollowerAssetName),
+      path.join(inputs.tmpPath, unhollowerAssetName),
       unhollowerPath
     );
     core.endGroup();
@@ -100,13 +100,13 @@ async function run(): Promise<void> {
 
     // #region Download Unity libraies
     core.startGroup("Download Unity libraries");
-    const unityVersion = inputs.unityVersion.value || (await getUnityVersion());
+    const unityVersion = inputs.unityVersion || (await getUnityVersion());
     await cmd.wget(
       `https://github.com/LavaGang/Unity-Runtime-Libraries/raw/master/${unityVersion}.zip`,
-      inputs.tmpPath.value
+      inputs.tmpPath
     );
     await cmd.extract(
-      path.join(inputs.tmpPath.value, `${unityVersion}.zip`),
+      path.join(inputs.tmpPath, `${unityVersion}.zip`),
       path.join(asmGenRoot, "UnityDependencies")
     );
     core.endGroup();
@@ -121,13 +121,13 @@ async function run(): Promise<void> {
     }
     // #endregion
 
-    io.rmRF(inputs.tmpPath.value);
+    io.rmRF(inputs.tmpPath);
 
     // #region Run Cpp2IL
     core.startGroup("Run Cpp2IL");
     let cpp2IlArgs = [
-      `--game-path "${inputs.gamePath.value}"`,
-      `--exe-name "${inputs.gameExe.value}"`
+      `--game-path "${inputs.gamePath}"`,
+      `--exe-name "${inputs.gameExe}"`
     ];
 
     // Flags are different in the rewrite of Cpp2IL
@@ -165,15 +165,15 @@ async function run(): Promise<void> {
     core.startGroup("Run AssemblyUnhollower");
     const unhollowerArgs = [
       `--input=${path.join(cpp2IlPath, "cpp2il_out")}`,
-      `--output=${inputs.outPath.value}`,
+      `--output=${inputs.outPath}`,
       `--mscorlib=${path.join(
-        inputs.gamePath.value,
+        inputs.gamePath,
         "MelonLoader",
         "Managed",
         "mscorlib.dll"
       )}`,
       `--unity=${path.join(asmGenRoot, "UnityDependencies")}`,
-      `--gameassembly=${path.join(inputs.gamePath.value, "GameAssembly.dll")}`,
+      `--gameassembly=${path.join(inputs.gamePath, "GameAssembly.dll")}`,
       "--add-prefix-to=ICSharpCode",
       "--add-prefix-to=Newtonsoft",
       "--add-prefix-to=TinyJson",
