@@ -20,7 +20,7 @@ export default class MelonLoader {
     "https://melon.samboy.dev"
   ];
   static readonly endpoint = `/api/${this.version}/game`;
-  static async fetchGameJson(gameSlug: string): Promise<GameInfo | null> {
+  static async fetchGameJson(gameSlug: string): Promise<GameInfo> {
     core.info("Contacting MelonLoader API...");
     for (const mirror of this.mirrors) {
       core.info(`Getting game info from ${mirror}${this.endpoint}/${gameSlug}`);
