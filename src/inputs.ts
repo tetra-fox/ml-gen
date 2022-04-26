@@ -29,8 +29,9 @@ export default class Inputs {
 
     // Validate unity_version
     const matches = this.unityVersion.match(VERSION_REGEX);
-    if (!matches) throw new Error("unity_version is invalid (e.g. 2018.3.0)");
-    else this.unityVersion = matches[1];
+    if (!matches && this.unityVersion)
+      throw new Error("unity_version is invalid (e.g. 2018.3.0)");
+    else if (matches) this.unityVersion = matches[1];
 
     // Prepend 'v' to ml_version if it doesn't have it
     if (this.mlVersion !== "latest" && !this.mlVersion.startsWith("v"))

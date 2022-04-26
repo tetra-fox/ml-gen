@@ -31,11 +31,8 @@ async function run(): Promise<void> {
       "LavaGang/MelonLoader",
       inputs.mlVersion
     );
-    await GitHub.downloadReleaseAsset(mlRelease!, mlAssetName);
-    await cmd.extract(
-      path.join(inputs.tmpPath, mlAssetName),
-      inputs.gamePath
-    );
+    await GitHub.downloadReleaseAsset(mlRelease, mlAssetName);
+    await cmd.extract(path.join(inputs.tmpPath, mlAssetName), inputs.gamePath);
     core.endGroup();
     // #endregion
 
@@ -44,17 +41,17 @@ async function run(): Promise<void> {
     // Not sure of the specifics behind this, but it's in MelonLoader, so it should be here too.
     // https://github.com/LavaGang/MelonLoader/blob/2db3925134380b5763cf698792d5ed6cada29e0e/Dependencies/Il2CppAssemblyGenerator/RemoteAPI.cs#L102-L103
     if (
-      gameInfo!.forceCpp2IlVersion &&
-      semverLte(gameInfo!.forceCpp2IlVersion, "2022.0.2")
+      gameInfo.forceCpp2IlVersion &&
+      semverLte(gameInfo.forceCpp2IlVersion, "2022.0.2")
     )
-      gameInfo!.forceCpp2IlVersion = "2022.1.0-pre-release.3";
+      gameInfo.forceCpp2IlVersion = "2022.1.0-pre-release.3";
 
     const cpp2IlPath = path.join(asmGenRoot, "Cpp2IL");
     const cpp2IlRelease = await GitHub.getRelease(
       "SamboyCoding/Cpp2IL",
-      gameInfo!.forceCpp2IlVersion
+      gameInfo.forceCpp2IlVersion!
     );
-    let cpp2IlAssetName = `Cpp2IL-${gameInfo!.forceCpp2IlVersion}-`;
+    let cpp2IlAssetName = `Cpp2IL-${gameInfo.forceCpp2IlVersion}-`;
 
     if (os.platform() === "win32")
       cpp2IlAssetName += "Windows-Netframework472.zip";
@@ -62,13 +59,10 @@ async function run(): Promise<void> {
     else if (os.platform() === "linux") cpp2IlAssetName += "Linux";
     else throw new Error("Unsupported platform");
 
-    await GitHub.downloadReleaseAsset(cpp2IlRelease!, cpp2IlAssetName);
+    await GitHub.downloadReleaseAsset(cpp2IlRelease, cpp2IlAssetName);
 
     if (os.platform() === "win32") {
-      await cmd.extract(
-        path.join(inputs.tmpPath, cpp2IlAssetName),
-        cpp2IlPath
-      );
+      await cmd.extract(path.join(inputs.tmpPath, cpp2IlAssetName), cpp2IlPath);
     } else {
       // Linux and MacOS use self-contained binaries, just move it
       await io.mv(
@@ -85,12 +79,10 @@ async function run(): Promise<void> {
     const unhollowerPath = path.join(asmGenRoot, "Il2CppAssemblyUnhollower");
     const unhollowerRelease = await GitHub.getRelease(
       "knah/Il2CppAssemblyUnhollower",
-      `v${gameInfo!.forceUnhollowerVersion}`
+      `v${gameInfo.forceUnhollowerVersion}`
     );
-    const unhollowerAssetName = `Il2CppAssemblyUnhollower.${
-      gameInfo!.forceUnhollowerVersion
-    }.zip`;
-    await GitHub.downloadReleaseAsset(unhollowerRelease!, unhollowerAssetName);
+    const unhollowerAssetName = `Il2CppAssemblyUnhollower.${gameInfo.forceUnhollowerVersion}.zip`;
+    await GitHub.downloadReleaseAsset(unhollowerRelease, unhollowerAssetName);
     await cmd.extract(
       path.join(inputs.tmpPath, unhollowerAssetName),
       unhollowerPath
@@ -113,10 +105,10 @@ async function run(): Promise<void> {
     // #endregion
 
     // #region Download deobfuscation map
-    const hasMap = !!gameInfo!.mappingUrl;
+    const hasMap = !!gameInfo.mappingUrl;
     if (hasMap) {
       core.startGroup("Download deobfuscation map");
-      await cmd.wget(gameInfo!.mappingUrl!, asmGenRoot);
+      await cmd.wget(gameInfo.mappingUrl!, asmGenRoot);
       core.endGroup();
     }
     // #endregion
@@ -133,8 +125,8 @@ async function run(): Promise<void> {
     // Flags are different in the rewrite of Cpp2IL
     // https://github.com/LavaGang/MelonLoader/blob/c8a1c8619121fe1130f949ca09eedda8951e8a42/Dependencies/Il2CppAssemblyGenerator/Packages/Cpp2IL.cs#L37-L84
     if (
-      gameInfo!.forceCpp2IlVersion &&
-      semverLte(gameInfo!.forceCpp2IlVersion, "2022.0.999")
+      gameInfo.forceCpp2IlVersion &&
+      semverLte(gameInfo.forceCpp2IlVersion, "2022.0.999")
     ) {
       // ExecuteOld
       cpp2IlArgs = cpp2IlArgs.concat([
@@ -184,12 +176,12 @@ async function run(): Promise<void> {
       unhollowerArgs.push(
         `--rename-map=${path.join(
           asmGenRoot,
-          gameInfo!.mappingUrl!.split("/").pop()!
+          gameInfo.mappingUrl!.split("/").pop()!
         )}`
       );
 
-    if (gameInfo!.obfuscationRegex)
-      unhollowerArgs.push(`--obf-regex ${gameInfo!.obfuscationRegex}`);
+    if (gameInfo.obfuscationRegex)
+      unhollowerArgs.push(`--obf-regex ${gameInfo.obfuscationRegex}`);
 
     // Tell .NET what runtime to use so we can use this tool on non-Windows runners as well
     await fs.promises.writeFile(
