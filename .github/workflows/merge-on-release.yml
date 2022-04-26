@@ -24,3 +24,4 @@ jobs:
           from_branch: main
           target_branch: latest
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          message: Merge main -> latest
