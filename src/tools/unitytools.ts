@@ -44,11 +44,11 @@ export async function getUnityVersion(): Promise<string> {
   } else if (fs.existsSync(dataPath)) {
     version = await bytesToString(dataPath, 0x12, 11);
   } else if (fs.existsSync(exePath)) {
-    // Last resort, read from .exe (0xA30 bytes from end)
+    // Last resort, read from .exe (0x998 bytes from end)
     if (fs.existsSync(exePath))
       version = await bytesToString(
         exePath,
-        (await fs.promises.stat(exePath)).size - 0xa30,
+        (await fs.promises.stat(exePath)).size - 0x998,
         17
       );
   }
@@ -71,7 +71,7 @@ async function bytesToString(
   fs.read(handle.fd, buffer, 0, length, begin, function (err) {
     if (err) throw err;
   });
-  fs.close(handle.fd);
+  handle.close();
 
   return buffer.toString();
 }
