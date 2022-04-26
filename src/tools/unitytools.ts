@@ -49,7 +49,7 @@ export async function getUnityVersion(): Promise<string> {
       version = await bytesToString(
         exePath,
         (await fs.promises.stat(exePath)).size - 0x998,
-        17
+        21
       );
   }
 
