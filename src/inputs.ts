@@ -1,57 +1,46 @@
-import * as core from "@actions/core";
 import fs from "fs";
 import path from "path";
 
+import * as core from "@actions/core";
+
+import {VERSION_REGEX} from "./tools/unitytools";
+
 export default class Inputs {
-  static readonly game = {value: core.getInput("game"), required: true};
-  static readonly gamePath = {
-    value: path.normalize(core.getInput("game_path")),
-    required: true
-  };
-  static readonly gameExe = {
-    value: core.getInput("game_executable").replace(/\.exe|\.app$/, ""), // Remove extension
-    required: true
-  };
-  static readonly unityVersion = {
-    value: core.getInput("unity_version"),
-    required: true
-  };
-  static readonly tmpPath = {
-    value: path.normalize(core.getInput("work_path")),
-    required: false
-  };
-  static readonly outPath = {
-    value: path.normalize(
-      core.getInput("output_path") ||
-        path.resolve(this.gamePath.value, "MelonLoader", "Managed") // Default value
-    ),
-    required: false
-  };
-  static readonly mlVersion = {
-    value: core.getInput("ml_version"),
-    required: false
-  };
+  static readonly game = core.getInput("game", {
+    required: true,
+    trimWhitespace: true
+  });
+  static readonly gamePath = path.normalize(
+    core.getInput("game_path", {required: true, trimWhitespace: true})
+  );
+  static readonly gameExe = core
+    .getInput("game_executable", {required: true, trimWhitespace: true})
+    .replace(/\.exe|\.app$/, ""); // Remove extension
+  static unityVersion = core.getInput("unity_version");
+  static readonly tmpPath = path.normalize(core.getInput("work_path"));
+  static readonly outPath = path.normalize(
+    core.getInput("output_path") ||
+      path.resolve(this.gamePath, "MelonLoader", "Managed") // Default value
+  );
+  static mlVersion = core.getInput("ml_version");
+
   static validate(): void {
     core.info("Validating inputs...");
 
-    // Prepend 'v' if it's not already there
-    if (
-      this.mlVersion.value && // if it is set
-      this.mlVersion.value !== "latest" && // and also not "latest"
-      !this.mlVersion.value.startsWith("v") // and not already prefixed
-    )
-      this.mlVersion.value = `v${this.mlVersion.value}`;
+    // Validate unity_version
+    const matches = this.unityVersion.match(VERSION_REGEX);
+    if (!matches && this.unityVersion)
+      throw new Error("unity_version is invalid (e.g. 2018.3.0)");
+    else if (matches) this.unityVersion = matches[1];
 
-    // Make sure we have all the required inputs
-    for (const input of Object.values(Inputs)) {
-      if (input.required && !input.value)
-        throw new Error(`Input ${input.value} is required`);
-    }
+    // Prepend 'v' to ml_version if it doesn't have it
+    if (this.mlVersion !== "latest" && !this.mlVersion.startsWith("v"))
+      this.mlVersion = `v${this.mlVersion}`;
 
-    // Make sure game_path exists
-    if (!fs.existsSync(this.gamePath.value))
+    // Make sure game_path exists on disk
+    if (!fs.existsSync(this.gamePath))
       throw new Error(
-        `Input "game_path" does not point to an existing directory. Value: ${this.gamePath.value}`
+        `Input "game_path" does not point to an existing directory. Value: ${this.gamePath}`
       );
 
     core.info("Inputs look good!");

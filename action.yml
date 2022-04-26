@@ -13,8 +13,8 @@ inputs:
     description: Your Unity game's executable name
     required: true
   unity_version:
-    description: Your game's Unity version
-    required: true
+    description: Override Unity version (If it was not automatically found)
+    required: false
   work_path:
     description: Where tools will be downloaded
     default: ${{ github.workspace }}/ml-gen
@@ -24,6 +24,7 @@ inputs:
     required: false
   ml_version:
     description: MelonLoader release tag name
+    default: latest
     required: false
     
 runs:
