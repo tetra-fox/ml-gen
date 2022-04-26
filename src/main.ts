@@ -1,23 +1,24 @@
-import * as core from "@actions/core";
-import * as exec from "@actions/exec";
-import * as io from "@actions/io";
-import semverLte from "semver/functions/lte";
-
 import fs from "fs";
 import os from "os";
 import path from "path";
 
-import Inputs from "./inputs";
-import Tools from "./tools";
+import semverLte from "semver/functions/lte";
+import * as core from "@actions/core";
+import * as exec from "@actions/exec";
+import * as io from "@actions/io";
+
+import inputs from "./inputs";
+import cmd from "./tools/cmds";
+import {getUnityVersion} from "./tools/unitytools";
 import GitHub from "./apis/github";
 import MelonLoader from "./apis/melonloader";
 
 async function run(): Promise<void> {
   try {
-    Inputs.validate();
-    const gameInfo = await MelonLoader.fetchGameJson(Inputs.game.value);
+    inputs.validate();
+    const gameInfo = await MelonLoader.fetchGameJson(inputs.game);
     const asmGenRoot = path.join(
-      Inputs.gamePath.value,
+      inputs.gamePath,
       "MelonLoader",
       "Dependencies",
       "Il2CppAssemblyGenerator"
@@ -28,13 +29,10 @@ async function run(): Promise<void> {
     const mlAssetName = "MelonLoader.x64.zip";
     const mlRelease = await GitHub.getRelease(
       "LavaGang/MelonLoader",
-      Inputs.mlVersion.value
+      inputs.mlVersion
     );
-    await GitHub.downloadReleaseAsset(mlRelease!, mlAssetName);
-    await Tools.extract(
-      path.join(Inputs.tmpPath.value, mlAssetName),
-      Inputs.gamePath.value
-    );
+    await GitHub.downloadReleaseAsset(mlRelease, mlAssetName);
+    await cmd.extract(path.join(inputs.tmpPath, mlAssetName), inputs.gamePath);
     core.endGroup();
     // #endregion
 
@@ -43,17 +41,17 @@ async function run(): Promise<void> {
     // Not sure of the specifics behind this, but it's in MelonLoader, so it should be here too.
     // https://github.com/LavaGang/MelonLoader/blob/2db3925134380b5763cf698792d5ed6cada29e0e/Dependencies/Il2CppAssemblyGenerator/RemoteAPI.cs#L102-L103
     if (
-      gameInfo!.forceCpp2IlVersion &&
-      semverLte(gameInfo!.forceCpp2IlVersion, "2022.0.2")
+      gameInfo.forceCpp2IlVersion &&
+      semverLte(gameInfo.forceCpp2IlVersion, "2022.0.2")
     )
-      gameInfo!.forceCpp2IlVersion = "2022.1.0-pre-release.3";
+      gameInfo.forceCpp2IlVersion = "2022.1.0-pre-release.3";
 
     const cpp2IlPath = path.join(asmGenRoot, "Cpp2IL");
     const cpp2IlRelease = await GitHub.getRelease(
       "SamboyCoding/Cpp2IL",
-      gameInfo!.forceCpp2IlVersion
+      gameInfo.forceCpp2IlVersion!
     );
-    let cpp2IlAssetName = `Cpp2IL-${gameInfo!.forceCpp2IlVersion}-`;
+    let cpp2IlAssetName = `Cpp2IL-${gameInfo.forceCpp2IlVersion}-`;
 
     if (os.platform() === "win32")
       cpp2IlAssetName += "Windows-Netframework472.zip";
@@ -61,17 +59,14 @@ async function run(): Promise<void> {
     else if (os.platform() === "linux") cpp2IlAssetName += "Linux";
     else throw new Error("Unsupported platform");
 
-    await GitHub.downloadReleaseAsset(cpp2IlRelease!, cpp2IlAssetName);
+    await GitHub.downloadReleaseAsset(cpp2IlRelease, cpp2IlAssetName);
 
     if (os.platform() === "win32") {
-      await Tools.extract(
-        path.join(Inputs.tmpPath.value, cpp2IlAssetName),
-        cpp2IlPath
-      );
+      await cmd.extract(path.join(inputs.tmpPath, cpp2IlAssetName), cpp2IlPath);
     } else {
       // Linux and MacOS use self-contained binaries, just move it
       await io.mv(
-        path.join(Inputs.tmpPath.value, cpp2IlAssetName),
+        path.join(inputs.tmpPath, cpp2IlAssetName),
         path.join(cpp2IlPath, cpp2IlAssetName)
       );
       await exec.exec("chmod", ["+x", path.join(cpp2IlPath, cpp2IlAssetName)]);
@@ -84,14 +79,12 @@ async function run(): Promise<void> {
     const unhollowerPath = path.join(asmGenRoot, "Il2CppAssemblyUnhollower");
     const unhollowerRelease = await GitHub.getRelease(
       "knah/Il2CppAssemblyUnhollower",
-      `v${gameInfo!.forceUnhollowerVersion}`
+      `v${gameInfo.forceUnhollowerVersion}`
     );
-    const unhollowerAssetName = `Il2CppAssemblyUnhollower.${
-      gameInfo!.forceUnhollowerVersion
-    }.zip`;
-    await GitHub.downloadReleaseAsset(unhollowerRelease!, unhollowerAssetName);
-    await Tools.extract(
-      path.join(Inputs.tmpPath.value, unhollowerAssetName),
+    const unhollowerAssetName = `Il2CppAssemblyUnhollower.${gameInfo.forceUnhollowerVersion}.zip`;
+    await GitHub.downloadReleaseAsset(unhollowerRelease, unhollowerAssetName);
+    await cmd.extract(
+      path.join(inputs.tmpPath, unhollowerAssetName),
       unhollowerPath
     );
     core.endGroup();
@@ -99,43 +92,43 @@ async function run(): Promise<void> {
 
     // #region Download Unity libraies
     core.startGroup("Download Unity libraries");
-    await Tools.wget(
-      `https://github.com/LavaGang/Unity-Runtime-Libraries/raw/master/${Inputs.unityVersion.value}.zip`,
-      Inputs.tmpPath.value
+    const unityVersion = inputs.unityVersion || (await getUnityVersion());
+    await cmd.wget(
+      `https://github.com/LavaGang/Unity-Runtime-Libraries/raw/master/${unityVersion}.zip`,
+      inputs.tmpPath
     );
-    await Tools.extract(
-      path.join(Inputs.tmpPath.value, `${Inputs.unityVersion.value}.zip`),
+    await cmd.extract(
+      path.join(inputs.tmpPath, `${unityVersion}.zip`),
       path.join(asmGenRoot, "UnityDependencies")
     );
     core.endGroup();
     // #endregion
 
     // #region Download deobfuscation map
-    const hasMap = !!gameInfo!.mappingUrl;
+    const hasMap = !!gameInfo.mappingUrl;
     if (hasMap) {
       core.startGroup("Download deobfuscation map");
-      await Tools.wget(gameInfo!.mappingUrl!, asmGenRoot);
+      await cmd.wget(gameInfo.mappingUrl!, asmGenRoot);
       core.endGroup();
     }
     // #endregion
 
-    io.rmRF(Inputs.tmpPath.value);
+    io.rmRF(inputs.tmpPath);
 
     // #region Run Cpp2IL
     core.startGroup("Run Cpp2IL");
     let cpp2IlArgs = [
-      `--game-path "${Inputs.gamePath.value}"`,
-      `--exe-name "${Inputs.gameExe.value}"`
+      `--game-path "${inputs.gamePath}"`,
+      `--exe-name "${inputs.gameExe}"`
     ];
 
     // Flags are different in the rewrite of Cpp2IL
-    // https://github.com/LavaGang/MelonLoader/blob/c8a1c8619121fe1130f949ca09eedda8951e8a42/Dependencies/Il2CppAssemblyGenerator/Packages/Cpp2IL.cs#L37-L42
+    // https://github.com/LavaGang/MelonLoader/blob/c8a1c8619121fe1130f949ca09eedda8951e8a42/Dependencies/Il2CppAssemblyGenerator/Packages/Cpp2IL.cs#L37-L84
     if (
-      gameInfo!.forceCpp2IlVersion &&
-      semverLte(gameInfo!.forceCpp2IlVersion, "2022.0.999")
+      gameInfo.forceCpp2IlVersion &&
+      semverLte(gameInfo.forceCpp2IlVersion, "2022.0.999")
     ) {
       // ExecuteOld
-      // https://github.com/LavaGang/MelonLoader/blob/c8a1c8619121fe1130f949ca09eedda8951e8a42/Dependencies/Il2CppAssemblyGenerator/Packages/Cpp2IL.cs#L66-L85
       cpp2IlArgs = cpp2IlArgs.concat([
         "--skip-analysis",
         "--skip-metadata-txts",
@@ -144,7 +137,6 @@ async function run(): Promise<void> {
       ]);
     } else {
       // ExecuteNew
-      // https://github.com/LavaGang/MelonLoader/blob/c8a1c8619121fe1130f949ca09eedda8951e8a42/Dependencies/Il2CppAssemblyGenerator/Packages/Cpp2IL.cs#L44-L64
       cpp2IlArgs = cpp2IlArgs.concat([
         "--use-processor attributeinjector",
         "--output-as dummydll",
@@ -165,15 +157,15 @@ async function run(): Promise<void> {
     core.startGroup("Run AssemblyUnhollower");
     const unhollowerArgs = [
       `--input=${path.join(cpp2IlPath, "cpp2il_out")}`,
-      `--output=${Inputs.outPath.value}`,
+      `--output=${inputs.outPath}`,
       `--mscorlib=${path.join(
-        Inputs.gamePath.value,
+        inputs.gamePath,
         "MelonLoader",
         "Managed",
         "mscorlib.dll"
       )}`,
       `--unity=${path.join(asmGenRoot, "UnityDependencies")}`,
-      `--gameassembly=${path.join(Inputs.gamePath.value, "GameAssembly.dll")}`,
+      `--gameassembly=${path.join(inputs.gamePath, "GameAssembly.dll")}`,
       "--add-prefix-to=ICSharpCode",
       "--add-prefix-to=Newtonsoft",
       "--add-prefix-to=TinyJson",
@@ -184,12 +176,12 @@ async function run(): Promise<void> {
       unhollowerArgs.push(
         `--rename-map=${path.join(
           asmGenRoot,
-          gameInfo!.mappingUrl!.split("/").pop()!
+          gameInfo.mappingUrl!.split("/").pop()!
         )}`
       );
 
-    if (gameInfo!.obfuscationRegex)
-      unhollowerArgs.push(`--obf-regex ${gameInfo!.obfuscationRegex}`);
+    if (gameInfo.obfuscationRegex)
+      unhollowerArgs.push(`--obf-regex ${gameInfo.obfuscationRegex}`);
 
     // Tell .NET what runtime to use so we can use this tool on non-Windows runners as well
     await fs.promises.writeFile(

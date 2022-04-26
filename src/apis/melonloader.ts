@@ -1,5 +1,5 @@
-import * as rm from "typed-rest-client/RestClient";
 import * as core from "@actions/core";
+import * as rm from "typed-rest-client/RestClient";
 
 interface GameInfo {
   gameSlug: string;
@@ -20,7 +20,7 @@ export default class MelonLoader {
     "https://melon.samboy.dev"
   ];
   static readonly endpoint = `/api/${this.version}/game`;
-  static async fetchGameJson(gameSlug: string): Promise<GameInfo | null> {
+  static async fetchGameJson(gameSlug: string): Promise<GameInfo> {
     core.info("Contacting MelonLoader API...");
     for (const mirror of this.mirrors) {
       core.info(`Getting game info from ${mirror}${this.endpoint}/${gameSlug}`);
