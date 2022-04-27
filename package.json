@@ -1,7 +1,7 @@
 {
   "name": "ml-gen",
   "author": "tetra-fox",
-  "version": "0.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "MelonLoader's toolchain, but as a GitHub Action. Useful for CI builds of MelonLoader mods.",
   "main": "lib/main.js",
@@ -9,7 +9,7 @@
     "build": "tsc",
     "format": "prettier --write **/*.ts",
     "lint": "eslint src/**/*.ts",
-    "package": "ncc build --source-map -m --license licenses.txt",
+    "package": "ncc build -s -m --license licenses.txt && rimraf ./lib",
     "all": "npm run build && npm run format && npm run lint && npm run package"
   },
   "repository": {
@@ -33,6 +33,7 @@
     "eslint-plugin-github": "^4.3.6",
     "js-yaml": "^4.1.0",
     "prettier": "^2.6.2",
+    "rimraf": "^3.0.2",
     "typescript": "^4.6.3"
   }
 }
