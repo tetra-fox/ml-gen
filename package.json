@@ -20,6 +20,7 @@
   "dependencies": {
     "@actions/core": "^1.7.0",
     "@actions/exec": "^1.1.1",
+    "@actions/github": "^5.0.1",
     "@actions/io": "^1.1.2",
     "@tybys/windows-file-version-info": "^1.0.5",
     "semver": "^7.3.7",
