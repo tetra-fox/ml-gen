@@ -43,4 +43,5 @@ MelonLoader's toolchain, but as a GitHub Action. Useful for CI builds of MelonLo
 | `unity_version`   | Override Unity version (If it was not automatically found)                  |                                   | `2020.3.22`       | `string` | &cross;  |
 | `work_path`       | Temp directory                                                              | `${{ github.workspace }}/ml-gen`  | `./cool-tools`    | `string` | &cross;  |
 | `output_path`     | Output directory for libraries                                              | `[game_path]/MelonLoader/Managed` | `./here/go/libs`  | `string` | &cross;  |
-| `ml_version`      | MelonLoader release tag name                                                | `'latest'`                        | `v0.4.2`          | `string` | &cross;  |
+| `ml_version`      | MelonLoader release tag name                                                | `latest`                          | `v0.4.2`          | `string` | &cross;  |
+| `github_token`    | GitHub token for MelonLoader API                                            | `${{ github.token }}`             | `bunch'o'chars`   | `string` | &cross;  |
