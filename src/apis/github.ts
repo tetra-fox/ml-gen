@@ -47,6 +47,8 @@ export default class GitHub {
         latest: tag === "latest"
       });
 
+      core.info(`Got release info for ${repo[0]}/${repo[1]}@${tag}`);
+
       let assetUrl: string;
       if (
         repository.latestRelease &&
