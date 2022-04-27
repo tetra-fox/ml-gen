@@ -1,45 +1,76 @@
 import * as core from "@actions/core";
-import * as rm from "typed-rest-client/RestClient";
+import * as github from "@actions/github";
+import {GraphqlResponseError} from "@octokit/graphql";
 
 import cmd from "../tools/cmds";
 import inputs from "../inputs";
 
-// There are many more properties, but this is just what we need.
-interface Release {
-  assets: Asset[];
-}
-
-interface Asset {
-  name: string;
-  browser_download_url: string;
-}
-
 export default class GitHub {
-  static readonly root = "https://api.github.com";
-  static async getRelease(repo: string, tag?: string): Promise<Release> {
-    core.info(`Geting release info for ${repo}@${tag || "latest"}...`);
-    const rest: rm.RestClient = new rm.RestClient("ml-gen", this.root);
-    const res: rm.IRestResponse<Release> = await rest.get<Release>(
-      `${this.root}/repos/${repo}/releases/${
-        tag && tag !== "latest" ? `tags/${tag}` : "latest"
-      }`
-    );
-    if (res.statusCode === 200 && res.result) return res.result;
-    throw new Error("Failed to get release from GitHub API");
-  }
+  static readonly octokit = github.getOctokit(inputs.githubToken);
 
   static async downloadReleaseAsset(
-    release: Release,
+    repo: [string, string],
+    tag = "latest",
     assetName: string,
     destination: string = inputs.tmpPath
   ): Promise<void> {
-    const assetUrl = release.assets.filter(asset => asset.name === assetName)[0]
-      .browser_download_url;
+    const query = `
+    query ($owner: String!, $repo: String!, $name: String!, $tagName: String!, $latest: Boolean!) {
+      repository(owner: $owner, name: $repo) {
+        release(tagName: $tagName) @skip(if: $latest) {
+          releaseAssets(name: $name, last: 1) {
+            edges {
+              node {
+                downloadUrl
+              }
+            }
+          }
+        }
+        latestRelease @include(if: $latest) {
+          releaseAssets(name: $name, last: 1) {
+              edges {
+                node {
+                  downloadUrl
+                }
+              }
+            }
+        }
+      }
+    }`;
 
-    if (!assetUrl)
-      throw new Error(`Could not find asset ${assetName} in release`);
+    try {
+      const {repository} = await this.octokit.graphql(query, {
+        owner: repo[0],
+        repo: repo[1],
+        name: assetName,
+        tagName: tag,
+        latest: tag === "latest"
+      });
 
-    core.info(`Downloading ${assetName}...`);
-    await cmd.wget(assetUrl, destination);
+      core.info(`Got release info for ${repo[0]}/${repo[1]}@${tag}`);
+
+      let assetUrl: string;
+      if (
+        repository.latestRelease &&
+        repository.latestRelease.releaseAssets.edges[0]
+      ) {
+        assetUrl =
+          repository.latestRelease.releaseAssets.edges[0].node.downloadUrl;
+      } else if (
+        repository.release &&
+        repository.release.releaseAssets.edges[0]
+      ) {
+        assetUrl = repository.release.releaseAssets.edges[0].node.downloadUrl;
+      } else {
+        throw new Error(`Could not find asset ${assetName} in release ${tag}`);
+      }
+
+      core.info(`Downloading ${assetName}...`);
+      await cmd.wget(assetUrl, destination);
+    } catch (err) {
+      // rethrow as generic Error
+      if (err instanceof GraphqlResponseError) throw new Error(err.message);
+      if (err instanceof Error) throw err;
+    }
   }
 }

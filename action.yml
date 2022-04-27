@@ -26,6 +26,10 @@ inputs:
     description: MelonLoader release tag name
     default: latest
     required: false
+  github_token:
+    description: GitHub token to download tools
+    default: ${{ github.token }}
+    required: false
     
 runs:
   using: "node16"

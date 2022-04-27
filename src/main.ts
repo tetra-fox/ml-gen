@@ -27,11 +27,11 @@ async function run(): Promise<void> {
     // #region Setup MelonLoader
     core.startGroup("Setup MelonLoader");
     const mlAssetName = "MelonLoader.x64.zip";
-    const mlRelease = await GitHub.getRelease(
-      "LavaGang/MelonLoader",
-      inputs.mlVersion
+    await GitHub.downloadReleaseAsset(
+      ["LavaGang", "MelonLoader"],
+      inputs.mlVersion,
+      mlAssetName
     );
-    await GitHub.downloadReleaseAsset(mlRelease, mlAssetName);
     await cmd.extract(path.join(inputs.tmpPath, mlAssetName), inputs.gamePath);
     core.endGroup();
     // #endregion
@@ -47,10 +47,6 @@ async function run(): Promise<void> {
       gameInfo.forceCpp2IlVersion = "2022.1.0-pre-release.3";
 
     const cpp2IlPath = path.join(asmGenRoot, "Cpp2IL");
-    const cpp2IlRelease = await GitHub.getRelease(
-      "SamboyCoding/Cpp2IL",
-      gameInfo.forceCpp2IlVersion!
-    );
     let cpp2IlAssetName = `Cpp2IL-${gameInfo.forceCpp2IlVersion}-`;
 
     if (os.platform() === "win32")
@@ -59,7 +55,11 @@ async function run(): Promise<void> {
     else if (os.platform() === "linux") cpp2IlAssetName += "Linux";
     else throw new Error("Unsupported platform");
 
-    await GitHub.downloadReleaseAsset(cpp2IlRelease, cpp2IlAssetName);
+    await GitHub.downloadReleaseAsset(
+      ["SamboyCoding", "Cpp2IL"],
+      gameInfo.forceCpp2IlVersion!,
+      cpp2IlAssetName
+    );
 
     if (os.platform() === "win32") {
       await cmd.extract(path.join(inputs.tmpPath, cpp2IlAssetName), cpp2IlPath);
@@ -77,12 +77,12 @@ async function run(): Promise<void> {
     // #region Setup AssemblyUnhollower
     core.startGroup("Setup AssemblyUnhollower");
     const unhollowerPath = path.join(asmGenRoot, "Il2CppAssemblyUnhollower");
-    const unhollowerRelease = await GitHub.getRelease(
-      "knah/Il2CppAssemblyUnhollower",
-      `v${gameInfo.forceUnhollowerVersion}`
-    );
     const unhollowerAssetName = `Il2CppAssemblyUnhollower.${gameInfo.forceUnhollowerVersion}.zip`;
-    await GitHub.downloadReleaseAsset(unhollowerRelease, unhollowerAssetName);
+    await GitHub.downloadReleaseAsset(
+      ["knah", "Il2CppAssemblyUnhollower"],
+      `v${gameInfo.forceUnhollowerVersion}`,
+      unhollowerAssetName
+    );
     await cmd.extract(
       path.join(inputs.tmpPath, unhollowerAssetName),
       unhollowerPath
