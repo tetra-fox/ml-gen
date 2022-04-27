@@ -23,6 +23,7 @@ export default class Inputs {
       path.resolve(this.gamePath, "MelonLoader", "Managed") // Default value
   );
   static mlVersion = core.getInput("ml_version");
+  static githubToken = core.getInput("github_token");
 
   static validate(): void {
     core.info("Validating inputs...");
