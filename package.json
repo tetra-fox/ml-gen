@@ -24,7 +24,7 @@
     "@actions/io": "^1.1.2",
     "@tybys/windows-file-version-info": "^1.0.5",
     "semver": "^7.3.7",
-    "typed-rest-client": "^1.8.6"
+    "typed-rest-client": "^1.8.9"
   },
   "devDependencies": {
     "@types/node": "^17.0.35",
