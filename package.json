@@ -27,7 +27,7 @@
     "typed-rest-client": "^1.8.9"
   },
   "devDependencies": {
-    "@types/node": "^17.0.42",
+    "@types/node": "^18.0.0",
     "@types/semver": "^7.3.9",
     "@vercel/ncc": "^0.34.0",
     "eslint": "^8.17.0",
