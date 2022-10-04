@@ -23,7 +23,7 @@
     "@actions/github": "5.1.1",
     "@actions/io": "1.1.2",
     "@tybys/windows-file-version-info": "1.0.5",
-    "semver": "7.3.7",
+    "semver": "7.3.8",
     "typed-rest-client": "1.8.9"
   },
   "devDependencies": {
