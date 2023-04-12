@@ -1,7 +1,7 @@
 {
   "name": "ml-gen",
   "author": "tetra-fox",
-  "version": "1.1.0",
+  "version": "0.0.0",
   "private": true,
   "description": "MelonLoader's toolchain, but as a GitHub Action. Useful for CI builds of MelonLoader mods.",
   "main": "lib/main.js",
@@ -23,18 +23,18 @@
     "@actions/github": "5.1.1",
     "@actions/io": "1.1.3",
     "@tybys/windows-file-version-info": "1.0.5",
-    "semver": "7.3.8",
+    "semver": "7.4.0",
     "typed-rest-client": "1.8.9"
   },
   "devDependencies": {
-    "@types/node": "17.0.42",
+    "@types/node": "18.15.11",
     "@types/semver": "7.3.13",
     "@vercel/ncc": "0.36.1",
     "eslint": "8.38.0",
     "eslint-plugin-github": "4.7.0",
     "js-yaml": "4.1.0",
     "prettier": "2.8.7",
-    "rimraf": "3.0.2",
-    "typescript": "4.9.5"
+    "rimraf": "5.0.0",
+    "typescript": "5.0.4"
   }
 }
