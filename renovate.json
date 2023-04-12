@@ -1,11 +1,18 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:base", ":semanticCommits", "schedule:quarterly"],
+  "automerge": true,
+  "automergeType": "branch",
   "packageRules": [
     {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "automerge": true,
-      "automergeType": "branch"
+      "groupName": "npm",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "groupName": "github actions",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch"]
     }
   ]
 }
